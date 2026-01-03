@@ -3,8 +3,15 @@ import random
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 
+from dotenv import load_dotenv
+import os
 
-bot = Bot(token="8428375214:AAGlkwTXZ30PKbbhs-HeyEz3pkM3U15ukgc")
+load_dotenv()
+
+TOKEN = os.getenv('TOKEN')
+
+
+bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 @dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
