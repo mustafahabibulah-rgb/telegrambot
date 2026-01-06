@@ -7,6 +7,10 @@ from aiogram.filters import CommandStart
 bot = Bot(token="8428375214:AAGlkwTXZ30PKbbhs-HeyEz3pkM3U15ukgc")
 dp = Dispatcher()
 
+@dp.message()
+async def hello(message: types.Message):
+    await message.send_copu(message.from_user.id)
+
 @dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
 async def menu_handler(message: types.Message):
     kb = [
