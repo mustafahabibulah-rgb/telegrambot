@@ -1,8 +1,15 @@
 import asyncio
+import logging
 from aiogram import Bot, Dispatcher, types
 
 from dotenv import load_dotenv
 import os
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -31,6 +38,7 @@ async def hello(message: types.Message):
 
 
 async def main():
+    logger.info("Bot is starting...")
     await dp.start_polling(bot)
 
 
