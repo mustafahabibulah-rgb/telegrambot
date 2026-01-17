@@ -15,8 +15,23 @@ load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
 
+GRUP_ID_2='-5018213536'
+GRUP_ID_1='-5004537976'
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+GROUP_1_ID = -5004537976
+GROUP_2_ID = -5018213536
+
+@dp.message()
+async def hello(message: types.Message):
+    if message.chat.id == GROUP_1_ID:
+        await message.copy_to(GROUP_2_ID)
+
+    elif message.chat.id == GROUP_2_ID:
+        await message.copy_to(GROUP_1_ID)
+
 
 
 @dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
