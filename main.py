@@ -1,3 +1,5 @@
+from functools import wraps
+from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
@@ -14,15 +16,32 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
-
-GRUP_ID_2='-5018213536'
-GRUP_ID_1='-5004537976'
+DEV_CHAT_ID = os.getenv('DEV_CHAT_ID')
+GROUP_1_ID='-5004537976'
+GROUP_2_ID='-5018213536'
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-GROUP_1_ID = -5004537976
-GROUP_2_ID = -5018213536
+
+def notify_on_exception(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as exc:  # noqa: BLE001
+            # Try to report to dev chat, then re-raise
+            try:
+                error_text = (
+                    f"Handler {func.__name__} failed: {type(exc).__name__}: {exc}\n"
+                )
+                await bot.send_message(chat_id=int(DEV_CHAT_ID), text=error_text)
+            except Exception:  # noqa: BLE001
+                pass
+            raise
+
+    return wrapper
+
 
 @dp.message()
 async def hello(message: types.Message):
@@ -33,8 +52,7 @@ async def hello(message: types.Message):
         await message.copy_to(GROUP_1_ID)
 
 
-
-@dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
+@dp.message(CommandStart())
 async def menu_handler(message: types.Message):
     kb = [
         [types.KeyboardButton(text="руски"), types.KeyboardButton(text="арабски")],
@@ -46,14 +64,14 @@ async def menu_handler(message: types.Message):
     )
 
 
-@dp.message(lambda m: "id" in m.text.lower() or "/id" in m.text.lower())
+@dp.message(Command("id"))
 async def get_chat_id(message: types.Message):
     await message.answer(f"Ваш ID: {message.chat.id}")
 
 
-@dp.message()
-async def hello(message: types.Message):
-    await message.send_copy(message.from_user.id)
+# @dp.message()
+# async def hello(message: types.Message):
+#     await message.send_copy(message.from_user.id)
 
 
 async def main():
