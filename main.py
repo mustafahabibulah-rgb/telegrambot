@@ -46,7 +46,7 @@ def notify_on_exception(func):
 @dp.message(CommandStart())
 async def start_command_handler(message: types.Message):
     if message.chat.type != "private":
-        await message.answer("Этот бот работает только в приватных чатах.")
+        await message.answer(texts.group_msg.get(message.from_user.language_code, "en"))
         return
 
     async with async_session_maker() as session:

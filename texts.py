@@ -10,3 +10,16 @@ send_contact = {
     "pa": "ਪਿਨ 'ਤੇ ਟੈਪ ਕਰੋ, `contacts` ਚੁਣੋ ਅਤੇ ਉਸ ਵਿਅਕਤੀ ਦਾ ਸੰਪਰਕ ਭੇਜੋ ਜਿਸ ਨਾਲ ਤੁਸੀਂ ਗੱਲ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ।",
     "de": "Tippe auf Anheften, wähle `Kontakte` und sende den Kontakt der Person, mit der du chatten möchtest.",
 }
+
+group_msg = {
+    "es": "Este bot solo funciona en chats privados.",
+    "ru": "Бот работает только в приватных чатах.",
+    "en": "Bot works only in private chats.",
+    "ar": "البوت يعمل فقط في المحادثات الخاصة.",
+    "pt": "O bot funciona apenas em conversas privadas.",
+    "bn": "বট শুধুমাত্র ব্যক্তিগত চ্যাটে কাজ করে।",
+    "id": "Bot hanya bekerja di chat pribadi.",
+    "ja": "ボットはプライベートチャットでのみ機能します。",
+    "pa": "ਬੋਟ ਕੇਵਲ ਪਰਦੇਦਾਰ ਚੈਟ ਵਿੱਚ ਕੰਮ ਕਰਦਾ ਹੈ।",
+    "de": "Der Bot funktioniert nur in privaten Chats.",
+}
