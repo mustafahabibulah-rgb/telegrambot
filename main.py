@@ -2,13 +2,13 @@ from functools import wraps
 from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import FSInputFile
 
 from dotenv import load_dotenv
 import os
 
-from db import User, async_session_maker, get_or_create, init_models
+from db import User, async_session_maker, create_or_update, get_or_create, init_models
 import texts
 
 logging.basicConfig(
@@ -21,6 +21,16 @@ TOKEN = os.getenv('TOKEN')
 DEV_CHAT_ID = os.getenv('DEV_CHAT_ID')
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+
+def get_name_from_vcard(vcard: str) -> str | None:
+    """Extract name from vCard string. Returns None if not found."""
+    if not vcard:
+        return None
+    for line in vcard.split('\n'):
+        if line.startswith('FN:'):
+            return line[3:].strip()
+    return None
 
 
 def notify_on_exception(func):
@@ -50,7 +60,7 @@ async def start_command_handler(message: types.Message):
         return
 
     async with async_session_maker() as session:
-        await get_or_create(
+        await create_or_update(
             session,
             User,
             defaults={"full_name": message.chat.full_name, "username": message.chat.username},
@@ -69,6 +79,18 @@ async def start_command_handler(message: types.Message):
 @dp.message(Command("id"))
 async def id_command_handler(message: types.Message):
     await message.answer(f"Ваш ID: {message.chat.id}")
+
+
+@dp.message(F.contact)
+@notify_on_exception
+async def handle_new_contact(message: types.Message) -> None:
+    async with async_session_maker() as session:
+        await get_or_create(
+            session,
+            User,
+            defaults={"full_name": get_name_from_vcard(message.contact.vcard)},
+            id=message.contact.user_id,
+        )
 
 
 async def main():
