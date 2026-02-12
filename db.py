@@ -62,6 +62,33 @@ async def get_or_create(session: AsyncSession, model: Type[Base], defaults: Opti
         return instance, True
 
 
+async def create_or_update(session: AsyncSession, model: Type[Base], defaults: Optional[dict] = None, **kwargs: Any) -> tuple[Any, bool]:
+    if defaults is None:
+        defaults = {}
+
+    try:
+        query = select(model).filter_by(**kwargs)
+        result = await session.execute(query)
+        instance = result.scalars().one()
+        
+        # Update existing instance with defaults
+        for key, value in defaults.items():
+            setattr(instance, key, value)
+        
+        await session.commit()
+        await session.refresh(instance)
+        return instance, False
+
+    except NoResultFound:
+        # Create new instance
+        params = {**kwargs, **defaults}
+        query = insert(model).values(**params).returning(model)
+        result = await session.execute(query)
+        await session.commit()
+        instance = result.scalars().one()
+        return instance, True
+
+
 async def init_models() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
