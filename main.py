@@ -52,8 +52,8 @@ def notify_on_exception(func):
     return wrapper
 
 
-@notify_on_exception
 @dp.message(CommandStart())
+@notify_on_exception
 async def start_command_handler(message: types.Message):
     if message.chat.type != "private":
         await message.answer(texts.group_msg.get(message.from_user.language_code, "en"))
@@ -75,8 +75,8 @@ async def start_command_handler(message: types.Message):
     await message.answer_animation(animation, caption=text)
 
 
-@notify_on_exception
 @dp.message(Command("id"))
+@notify_on_exception
 async def id_command_handler(message: types.Message):
     await message.answer(f"Ваш ID: {message.chat.id}")
 
