@@ -1,0 +1,20 @@
+[project]
+name = "mustafa-bot"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Marsel Gaifulin",email = "bikmetle@proton.me"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+    "sqlalchemy (>=2.0.46,<3.0.0)",
+    "aiogram (>=3.24.0,<4.0.0)",
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "aiosqlite (>=0.22.1,<0.23.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
