@@ -1,3 +1,5 @@
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums.parse_mode import ParseMode
 from functools import wraps
 from aiogram.filters import CommandStart, Command
 import asyncio
@@ -21,7 +23,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 DEV_CHAT_ID = os.getenv('DEV_CHAT_ID')
-bot = Bot(token=TOKEN)
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
 
@@ -107,8 +109,42 @@ async def handle_new_contact(message: types.Message) -> None:
         await message.reply(text.format(invite_link=group_link.invite_link))
         return
 
-    group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=-1001619680490, member_limit=1)
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=None, sender_id=None
+        )
+        result = await session.execute(query)
+        group = result.scalars().first()
+
+        if not group:
+            raise ValueError(
+                f"No group found, please manually add 2 empty groups, "
+                f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
+            )
+
+        group.recipient_id = message.contact.user_id
+        group.sender_id = message.from_user.id
+        await session.commit()
+
+    group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=group.id, member_limit=1)
     await message.reply(text.format(invite_link=group_link.invite_link))
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=None, sender_id=None
+        )
+        result = await session.execute(query)
+        group = result.scalars().first()
+
+        if not group:
+            raise ValueError(
+                f"No group found, please manually add 1 empty group, "
+                f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
+            )
+
+        group.recipient_id = message.from_user.id
+        group.sender_id = message.contact.user_id
+        await session.commit()
 
 
 async def main():
