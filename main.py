@@ -123,9 +123,27 @@ async def handle_new_chat_members(message: types.Message) -> None:
     async with async_session_maker() as session:
         query = select(User).filter(User.groups_as_recipient.any(Group.id == message.chat.id))
         result = await session.execute(query)
-        user = result.scalars().one_or_none()
+        recipient = result.scalars().one_or_none()
 
-    await bot.set_chat_title(message.chat.id, user.full_name)
+    await bot.set_chat_title(message.chat.id, recipient.full_name)
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=message.from_user.id, sender_id=recipient.id
+        )
+        result = await session.execute(query)
+        recipient_group = result.scalars().first()
+
+    text = texts.user_joined_group.get(message.from_user.language_code, "en")
+    group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=recipient_group.id, member_limit=1)
+    await bot.send_message(
+        chat_id=recipient.id, 
+        text=text.format(
+            user_id=message.from_user.id, 
+            user_name=message.from_user.full_name, 
+            group_link=group_link.invite_link
+        )
+    )
 
 
 @dp.message(F.contact)
@@ -160,6 +178,7 @@ async def handle_new_contact(message: types.Message) -> None:
         group = result.scalars().first()
 
         if not group:
+            await message.answer(texts.no_group_found.get(message.from_user.language_code, "en"))
             raise ValueError(
                 f"No group found, please manually add 2 empty groups, "
                 f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
@@ -180,6 +199,7 @@ async def handle_new_contact(message: types.Message) -> None:
         group = result.scalars().first()
 
         if not group:
+            await message.answer(texts.no_group_found.get(message.from_user.language_code, "en"))
             raise ValueError(
                 f"No group found, please manually add 1 empty group, "
                 f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
