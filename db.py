@@ -40,7 +40,7 @@ class Group(Base):
         back_populates="groups_as_recipient",
         foreign_keys=[recipient_id],
     )
-    language_code: Mapped[str] = mapped_column(String(length=5))
+    language_code: Mapped[str] = mapped_column(String(length=5), nullable=True)
 
 
 async def get_or_create(session: AsyncSession, model: Type[Base], defaults: Optional[dict] = None, **kwargs: Any) -> tuple[Any, bool]:
