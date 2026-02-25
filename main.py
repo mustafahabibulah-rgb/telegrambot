@@ -70,7 +70,11 @@ async def start_command_handler(message: types.Message):
         await create_or_update(
             session,
             User,
-            defaults={"full_name": message.chat.full_name, "username": message.chat.username},
+            defaults={
+                "full_name": message.chat.full_name, 
+                "username": message.chat.username, 
+                "language_code": message.from_user.language_code
+            },
             id=message.chat.id,
         )
 
