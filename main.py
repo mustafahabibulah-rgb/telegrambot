@@ -3,12 +3,14 @@ from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import FSInputFile
+from aiogram.types import ChatInviteLink, FSInputFile
 
 from dotenv import load_dotenv
 import os
 
-from db import User, async_session_maker, create_or_update, get_or_create, init_models
+from sqlalchemy import select
+
+from db import Group, User, async_session_maker, create_or_update, get_or_create, init_models
 import texts
 
 logging.basicConfig(
@@ -91,6 +93,22 @@ async def handle_new_contact(message: types.Message) -> None:
             defaults={"full_name": get_name_from_vcard(message.contact.vcard)},
             id=message.contact.user_id,
         )
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=message.contact.user_id, sender_id=message.from_user.id
+        )
+        result = await session.execute(query)
+        group = result.scalars().one_or_none()
+
+    text = texts.group_link.get(message.from_user.language_code, "en")
+    if group:
+        group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=group.id, member_limit=1)
+        await message.reply(text.format(invite_link=group_link.invite_link))
+        return
+
+    group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=-1001619680490, member_limit=1)
+    await message.reply(text.format(invite_link=group_link.invite_link))
 
 
 async def main():
