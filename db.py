@@ -17,6 +17,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     full_name: Mapped[Optional[str]] = mapped_column(String(length=256))
     username: Mapped[Optional[str]] = mapped_column(String(length=128))
+    language_code: Mapped[str] = mapped_column(String(length=5), nullable=True)
     groups_as_sender: Mapped[List["Group"]] = relationship(
         back_populates="sender",
         foreign_keys="Group.sender_id",
@@ -40,7 +41,7 @@ class Group(Base):
         back_populates="groups_as_recipient",
         foreign_keys=[recipient_id],
     )
-    language_code: Mapped[str] = mapped_column(String(length=5))
+    language_code: Mapped[str] = mapped_column(String(length=5), nullable=True)
 
 
 async def get_or_create(session: AsyncSession, model: Type[Base], defaults: Optional[dict] = None, **kwargs: Any) -> tuple[Any, bool]:

@@ -23,3 +23,16 @@ group_msg = {
     "pa": "ਬੋਟ ਕੇਵਲ ਪਰਦੇਦਾਰ ਚੈਟ ਵਿੱਚ ਕੰਮ ਕਰਦਾ ਹੈ।",
     "de": "Der Bot funktioniert nur in privaten Chats.",
 }
+
+group_link = {
+    "es": "Enlace al grupo: {invite_link}",
+    "en": "Group link: {invite_link}",
+    "ar": "رابط المجموعة: {invite_link}",
+    "pt": "Link do grupo: {invite_link}",
+    "bn": "গোপনীয় গ্রুপের লিঙ্ক: {invite_link}",
+    "id": "Tautan grup: {invite_link}",
+    "ru": "Ссылка на группу: {invite_link}",
+    "ja": "グループリンク: {invite_link}",
+    "pa": "ਗੁਰੂਤਾ ਗ੍ਰੁਪ ਲਿੰਕ: {invite_link}",
+    "de": "Gruppenlink: {invite_link}",
+}

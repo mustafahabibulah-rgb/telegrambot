@@ -1,14 +1,18 @@
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums.parse_mode import ParseMode
 from functools import wraps
 from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import FSInputFile
+from aiogram.types import ChatInviteLink, ChatMember, Contact, FSInputFile, ResultChatMemberUnion
 
 from dotenv import load_dotenv
 import os
 
-from db import User, async_session_maker, create_or_update, get_or_create, init_models
+from sqlalchemy import select
+
+from db import Group, User, async_session_maker, create_or_update, get_or_create, init_models
 import texts
 
 logging.basicConfig(
@@ -19,17 +23,20 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 DEV_CHAT_ID = os.getenv('DEV_CHAT_ID')
-bot = Bot(token=TOKEN)
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
 
-def get_name_from_vcard(vcard: str) -> str | None:
+def get_name_from_contact(contact: Contact) -> str | None:
     """Extract name from vCard string. Returns None if not found."""
-    if not vcard:
-        return None
-    for line in vcard.split('\n'):
-        if line.startswith('FN:'):
-            return line[3:].strip()
+    if hasattr(contact, 'first_name'):
+        return f"{contact.first_name} {contact.last_name or ''}"
+
+    if hasattr(contact, 'vcard') and contact.vcard:
+        for line in contact.vcard.split('\n'):
+            if line.startswith('FN:'):
+                return line[3:].strip()
+
     return None
 
 
@@ -63,7 +70,11 @@ async def start_command_handler(message: types.Message):
         await create_or_update(
             session,
             User,
-            defaults={"full_name": message.chat.full_name, "username": message.chat.username},
+            defaults={
+                "full_name": message.chat.full_name, 
+                "username": message.chat.username, 
+                "language_code": message.from_user.language_code
+            },
             id=message.chat.id,
         )
 
@@ -81,6 +92,42 @@ async def id_command_handler(message: types.Message):
     await message.answer(f"Ваш ID: {message.chat.id}")
 
 
+@dp.message(Command("empty"))
+@notify_on_exception
+async def empty_command_handler(message: types.Message):
+    if message.chat.type == "private":
+        return
+
+    if message.from_user.id != int(DEV_CHAT_ID):
+        return
+
+    bot_member: ResultChatMemberUnion = await bot.get_chat_member(message.chat.id, bot.id)
+    if bot_member.status not in ["administrator", "creator"]:
+        await message.answer("Please add bot to the group as admin")
+        return
+
+    async with async_session_maker() as session:
+        group, created = await get_or_create(
+            session,
+            Group,
+            defaults={"recipient_id": None, "sender_id": None},
+            id=message.chat.id,
+        )
+    
+    await message.answer(f"Group ID: {group.id}, created: {created}")
+
+
+@dp.message(F.new_chat_members)
+@notify_on_exception
+async def handle_new_chat_members(message: types.Message) -> None:
+    async with async_session_maker() as session:
+        query = select(User).filter(User.groups_as_recipient.any(Group.id == message.chat.id))
+        result = await session.execute(query)
+        user = result.scalars().one_or_none()
+
+    await bot.set_chat_title(message.chat.id, user.full_name)
+
+
 @dp.message(F.contact)
 @notify_on_exception
 async def handle_new_contact(message: types.Message) -> None:
@@ -88,9 +135,59 @@ async def handle_new_contact(message: types.Message) -> None:
         await get_or_create(
             session,
             User,
-            defaults={"full_name": get_name_from_vcard(message.contact.vcard)},
+            defaults={"full_name": get_name_from_contact(message.contact)},
             id=message.contact.user_id,
         )
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=message.contact.user_id, sender_id=message.from_user.id
+        )
+        result = await session.execute(query)
+        group = result.scalars().one_or_none()
+
+    text = texts.group_link.get(message.from_user.language_code, "en")
+    if group:
+        group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=group.id, member_limit=1)
+        await message.reply(text.format(invite_link=group_link.invite_link))
+        return
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=None, sender_id=None
+        )
+        result = await session.execute(query)
+        group = result.scalars().first()
+
+        if not group:
+            raise ValueError(
+                f"No group found, please manually add 2 empty groups, "
+                f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
+            )
+
+        group.recipient_id = message.contact.user_id
+        group.sender_id = message.from_user.id
+        await session.commit()
+
+    group_link: ChatInviteLink = await bot.create_chat_invite_link(chat_id=group.id, member_limit=1)
+    await message.reply(text.format(invite_link=group_link.invite_link))
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            recipient_id=None, sender_id=None
+        )
+        result = await session.execute(query)
+        group = result.scalars().first()
+
+        if not group:
+            raise ValueError(
+                f"No group found, please manually add 1 empty group, "
+                f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
+            )
+
+        group.recipient_id = message.from_user.id
+        group.sender_id = message.contact.user_id
+        await session.commit()
 
 
 async def main():
