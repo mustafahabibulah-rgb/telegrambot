@@ -69,3 +69,16 @@ no_group_found = {
     "pa": f"ਕੋਈ ਖੁੱਲਾ ਗ੍ਰੁਪ ਨਹੀਂ ਲੱਭਿਆ, ਮਾਰਚ ਦਾਤਾ ਨਾਲ ਸੰਪਰਕ ਕਰੋ <a href='tg://user?id={DEV_CHAT_ID}'>@bikmetle</a>",
     "de": f"Keine leeren Gruppen gefunden, kontaktieren Sie den Administrator <a href='tg://user?id={DEV_CHAT_ID}'>@bikmetle</a>",
 }
+
+not_authorized_group = {
+    "es": "El bot no tiene permisos para funcionar en este grupo, por favor contacte al administrador",
+    "en": "The bot does not have permissions to work in this group, please contact the administrator",
+    "ar": "البوت ليس لديه صلاحيات للعمل في هذه المجموعة، يرجى الاتصال بالمسؤول",
+    "pt": "O bot não tem permissões para funcionar nesse grupo, por favor contate o administrador",
+    "bn": "বট এই গ্রুপে কাজ করতে অনুমতি নেই, অ্যাডমিনকে যোগাযোগ করুন",
+    "id": "Bot tidak memiliki izin untuk bekerja di grup ini, silakan hubungi administrator",
+    "ru": "Бот не имеет разрешений для работы в этой группе, обратитесь к администратору",
+    "ja": "ボットはこのグループで機能する権限がないため、管理者に連絡してください",
+    "pa": "ਬੋਟ ਇਹ ਗ੍ਰੁਪ ਵਿੱਚ ਕੰਮ ਕਰਨ ਦਾ ਅਨੁਮਤੀ ਨਹੀਂ ਹੈ, ਮਾਰਚ ਦਾਤਾ ਨਾಲ ਸੰਪਰਕ ਕਰੋ",
+    "de": "Der Bot hat keine Berechtigungen für die Arbeit in dieser Gruppe, kontaktieren Sie den Administrator",
+}

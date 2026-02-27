@@ -1,11 +1,12 @@
 from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ChatMemberStatus
 from aiogram.enums.parse_mode import ParseMode
 from functools import wraps
 from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ChatInviteLink, ChatMember, Contact, FSInputFile, ResultChatMemberUnion
+from aiogram.types import ChatInviteLink, Contact, FSInputFile, ResultChatMemberUnion
 
 from dotenv import load_dotenv
 import os
@@ -146,7 +147,7 @@ async def handle_new_chat_members(message: types.Message) -> None:
     )
 
 
-@dp.message(F.contact)
+@dp.message(F.contact, F.chat.type.in_({"private"}))
 @notify_on_exception
 async def handle_new_contact(message: types.Message) -> None:
     async with async_session_maker() as session:
@@ -208,6 +209,33 @@ async def handle_new_contact(message: types.Message) -> None:
         group.recipient_id = message.from_user.id
         group.sender_id = message.contact.user_id
         await session.commit()
+
+
+@dp.message(F.chat.type.in_({"group", "supergroup"}))
+@notify_on_exception
+async def handle_group_new_message(message: types.Message) -> None:
+    bot_member: ResultChatMemberUnion = await bot.get_chat_member(message.chat.id, bot.id)
+    if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await message.answer("Please add bot to the group as admin")
+        return
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            id=message.chat.id
+        )
+        result = await session.execute(query)
+        group = result.scalars().one_or_none()
+
+    if not group:
+        await message.answer(texts.not_authorized_group.get(message.from_user.language_code, "en"))
+        raise ValueError(
+            f"Group not authorized, "
+            f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
+        )
+
+
+
+    await message.answer(texts.group_msg.get(message.from_user.language_code, "en"))
 
 
 async def main():
