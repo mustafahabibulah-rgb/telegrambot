@@ -1,18 +1,21 @@
 from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ChatMemberStatus
 from aiogram.enums.parse_mode import ParseMode
 from functools import wraps
 from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ChatInviteLink, ChatMember, Contact, FSInputFile, ResultChatMemberUnion
+from aiogram.types import ChatInviteLink, Contact, FSInputFile, ResultChatMemberUnion
 
 from dotenv import load_dotenv
 import os
 
-from sqlalchemy import select
+from sqlalchemy import join, select
+from sqlalchemy.orm import joinedload
 
 from db import Group, User, async_session_maker, create_or_update, get_or_create, init_models
+from keyboards import LanguageCallback, language_keyboard
 import texts
 
 logging.basicConfig(
@@ -117,6 +120,17 @@ async def empty_command_handler(message: types.Message):
     await message.answer(f"Group ID: {group.id}, created: {created}")
 
 
+@dp.message(Command("language"), F.chat.type.in_({"group", "supergroup"}))
+@notify_on_exception
+async def language_command_handler(message: types.Message):
+    await message.answer(
+        text=texts.choose_language.get(message.from_user.language_code, "en"),
+        reply_markup=await language_keyboard(),
+    )
+
+    await message.delete()
+
+
 @dp.message(F.new_chat_members)
 @notify_on_exception
 async def handle_new_chat_members(message: types.Message) -> None:
@@ -146,7 +160,7 @@ async def handle_new_chat_members(message: types.Message) -> None:
     )
 
 
-@dp.message(F.contact)
+@dp.message(F.contact, F.chat.type.in_({"private"}))
 @notify_on_exception
 async def handle_new_contact(message: types.Message) -> None:
     async with async_session_maker() as session:
@@ -208,6 +222,76 @@ async def handle_new_contact(message: types.Message) -> None:
         group.recipient_id = message.from_user.id
         group.sender_id = message.contact.user_id
         await session.commit()
+
+
+@dp.callback_query(LanguageCallback.filter())
+@notify_on_exception
+async def handle_language_callback(callback_query: types.CallbackQuery, callback_data: LanguageCallback):
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(id=callback_query.message.chat.id)
+        result = await session.execute(query)
+        group = result.scalars().one_or_none()
+
+        if group.sender_id != callback_query.from_user.id:
+            await callback_query.answer(
+                text=texts.not_group_sender.get(callback_query.from_user.language_code, "en"),
+            )
+            return
+
+        group.language = callback_data.language.value
+        await session.commit()
+
+    text = texts.language_changed.get(callback_query.from_user.language_code, "en")
+    await callback_query.answer(
+        text=text.format(language=callback_data.language.value),
+    )
+
+    await callback_query.message.delete()
+
+
+@dp.message(F.chat.type.in_({"group", "supergroup"}))
+@notify_on_exception
+async def handle_group_new_message(message: types.Message) -> None:
+    bot_member: ResultChatMemberUnion = await bot.get_chat_member(message.chat.id, bot.id)
+    if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await message.answer("Please add bot to the group as admin")
+        return
+
+    async with async_session_maker() as session:
+        query = select(Group).options(joinedload(Group.recipient)).filter_by(
+            id=message.chat.id
+        )
+        result = await session.execute(query)
+        sender_group = result.scalars().one_or_none()
+
+    if not sender_group:
+        await message.answer(texts.not_authorized_group.get(message.from_user.language_code, "en"))
+        raise ValueError(
+            f"Group not authorized, "
+            f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
+        )
+
+    if not sender_group.language:
+        await message.answer(
+            text=texts.choose_language.get(message.from_user.language_code, "en"),
+            reply_markup=await language_keyboard(),
+        )
+        return
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            sender_id=sender_group.recipient_id, 
+            recipient_id=message.from_user.id,
+        )
+        result = await session.execute(query)
+        recipient_group = result.scalars().one_or_none()
+
+    if not recipient_group.language:
+        text=texts.recipient_not_set_language.get(message.from_user.language_code, "en")
+        await message.answer(
+            text=text.format(user_id=sender_group.recipient.id, full_name=sender_group.recipient.full_name),
+        )
+        return
 
 
 async def main():
