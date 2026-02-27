@@ -82,3 +82,45 @@ not_authorized_group = {
     "pa": "ਬੋਟ ਇਹ ਗ੍ਰੁਪ ਵਿੱਚ ਕੰਮ ਕਰਨ ਦਾ ਅਨੁਮਤੀ ਨਹੀਂ ਹੈ, ਮਾਰਚ ਦਾਤਾ ਨਾಲ ਸੰਪਰਕ ਕਰੋ",
     "de": "Der Bot hat keine Berechtigungen für die Arbeit in dieser Gruppe, kontaktieren Sie den Administrator",
 }
+
+
+choose_language = {
+    "es": "Elige el idioma",
+    "en": "Choose the language",
+    "ar": "اختر اللغة",
+    "pt": "Escolha o idioma",
+    "bn": "ভাষা বাছাই করুন",
+    "id": "Pilih bahasa",
+    "ru": "Выберите язык",
+    "ja": "言語を選択してください",
+    "pa": "ਭਾਸ਼ਾ ਚੁਣੋ",
+    "de": "Sprache auswählen",
+}
+
+
+not_group_sender = {
+    "es": "No tienes permisos para cambiar el idioma de este grupo, por favor contacte al administrador",
+    "en": "You do not have permissions to change the language of this group, please contact the administrator",
+    "ar": "ليس لديك صلاحيات لتغيير اللغة في هذه المجموعة، يرجى الاتصال بالمسؤول",
+    "pt": "Você não tem permissões para alterar o idioma deste grupo, por favor contate o administrador",
+    "bn": "আপনি এই গ্রুপের ভাষা পরিবর্তন করতে অনুমতি নেই, অ্যাডমিনকে যোগাযোগ করুন",
+    "id": "Anda tidak memiliki izin untuk mengubah bahasa grup ini, silakan hubungi administrator",
+    "ru": "У вас нет разрешений для изменения языка в этой группе, обратитесь к администратору",
+    "ja": "このグループの言語を変更する権限がありません、管理者に連絡してください",
+    "pa": "ਤੁਸੀਂ ਇਹ ਗ੍ਰੁਪ ਦਾ ਭਾਸ਼ਾ ਬਦਲਣ ਦਾ ਅਨੁਮਤੀ ਨਹੀਂ ਹੈ, ਮਾਰਚ ਦਾਤਾ ਨਾਲ ਸੰਪਰਕ ਕਰੋ",
+    "de": "Sie haben keine Berechtigungen, um die Sprache in dieser Gruppe zu ändern, kontaktieren Sie den Administrator",
+}
+
+
+language_changed = {
+    "es": "El idioma del grupo ha sido cambiado a {language}",
+    "en": "The language of the group has been changed to {language}",
+    "ar": "تم تغيير اللغة في المجموعة إلى {language}",
+    "pt": "O idioma do grupo foi alterado para {language}",
+    "bn": "গ্রুপের ভাষা পরিবর্তিত হয়েছে {language}",
+    "id": "Bahasa grup telah diubah ke {language}",
+    "ru": "Язык группы изменен на {language}",
+    "ja": "グループの言語が変更されました {language}",
+    "pa": "ਗ੍ਰੁਪ ਦਾ ਭਾਸ਼ਾ ਬਦਲ ਗਿਆ ਹੈ {language}",
+    "de": "Die Sprache der Gruppe wurde auf {language} geändert",
+}

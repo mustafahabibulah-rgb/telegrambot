@@ -14,6 +14,7 @@ import os
 from sqlalchemy import select
 
 from db import Group, User, async_session_maker, create_or_update, get_or_create, init_models
+from keyboards import LanguageCallback, language_keyboard
 import texts
 
 logging.basicConfig(
@@ -118,6 +119,17 @@ async def empty_command_handler(message: types.Message):
     await message.answer(f"Group ID: {group.id}, created: {created}")
 
 
+@dp.message(Command("language"), F.chat.type.in_({"group", "supergroup"}))
+@notify_on_exception
+async def language_command_handler(message: types.Message):
+    await message.answer(
+        text=texts.choose_language.get(message.from_user.language_code, "en"),
+        reply_markup=await language_keyboard(),
+    )
+
+    await message.delete()
+
+
 @dp.message(F.new_chat_members)
 @notify_on_exception
 async def handle_new_chat_members(message: types.Message) -> None:
@@ -211,6 +223,31 @@ async def handle_new_contact(message: types.Message) -> None:
         await session.commit()
 
 
+@dp.callback_query(LanguageCallback.filter())
+@notify_on_exception
+async def handle_language_callback(callback_query: types.CallbackQuery, callback_data: LanguageCallback):
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(id=callback_query.message.chat.id)
+        result = await session.execute(query)
+        group = result.scalars().one_or_none()
+
+        if group.sender_id != callback_query.from_user.id:
+            await callback_query.answer(
+                text=texts.not_group_sender.get(callback_query.from_user.language_code, "en"),
+            )
+            return
+
+        group.language_code = callback_data.language
+        await session.commit()
+
+    text = texts.language_changed.get(callback_query.from_user.language_code, "en")
+    await callback_query.answer(
+        text=text.format(language=callback_data.language.value),
+    )
+
+    await callback_query.message.delete()
+
+
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 @notify_on_exception
 async def handle_group_new_message(message: types.Message) -> None:
@@ -233,9 +270,12 @@ async def handle_group_new_message(message: types.Message) -> None:
             f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
         )
 
-
-
-    await message.answer(texts.group_msg.get(message.from_user.language_code, "en"))
+    if not group.language_code:
+        await message.answer(
+            text=texts.choose_language.get(message.from_user.language_code, "en"),
+            reply_markup=await language_keyboard(),
+        )
+        return
 
 
 async def main():
