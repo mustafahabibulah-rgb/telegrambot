@@ -124,3 +124,16 @@ language_changed = {
     "pa": "ਗ੍ਰੁਪ ਦਾ ਭਾਸ਼ਾ ਬਦਲ ਗਿਆ ਹੈ {language}",
     "de": "Die Sprache der Gruppe wurde auf {language} geändert",
 }
+
+recipient_not_set_language = {  
+    "es": "El usuario <a href='tg://user?id={user_id}'>{full_name}</a> no ha configurado el idioma, por favor pídele que lo configure",
+    "en": "The user <a href='tg://user?id={user_id}'>{full_name}</a> has not set the language, please ask them to set it",
+    "ar": "المستخدم <a href='tg://user?id={user_id}'>{full_name}</a> لم يحدد اللغة، يرجى أن تطلب منه تحديدها",
+    "pt": "O usuário <a href='tg://user?id={user_id}'>{full_name}</a> não definiu o idioma, por favor peça para ele defini-lo",
+    "bn": "ব্যক্তি <a href='tg://user?id={user_id}'>{full_name}</a> ভাষা নির্ধারণ করেননি, দয়া করে তাকে ভাষা নির্ধারণ করতে বলুন",
+    "id": "Pengguna <a href='tg://user?id={user_id}'>{full_name}</a> belum mengatur bahasa, silakan minta dia untuk mengaturnya",
+    "ru": "Пользователь <a href='tg://user?id={user_id}'>{full_name}</a> не установил язык, попросите его установить язык",
+    "ja": "ユーザー <a href='tg://user?id={user_id}'>{full_name}</a> は言語を設定していません。言語を設定するよう依頼してください",
+    "pa": "ਵਿਅਕਤੀ <a href='tg://user?id={user_id}'>{full_name}</a> ਨੇ ਭਾਸ਼ਾ ਸੈਟ ਨਹੀਂ ਕੀਤੀ, ਕਿਰਪਾ ਕਰਕੇ ਉਹਨਾਂ ਨੂੰ ਇਹ ਸੈਟ ਕਰਨ ਲਈ ਕਹੋ",
+    "de": "Der Benutzer <a href='tg://user?id={user_id}'>{full_name}</a> hat keine Sprache eingestellt, bitte bitten Sie ihn, eine Sprache einzustellen",
+}

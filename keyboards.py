@@ -1,22 +1,19 @@
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types.inline_keyboard_button import InlineKeyboardButton
-from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.filters.callback_data import CallbackData
 from enum import Enum
 
 
 class LanguageModelEnum(str, Enum):
-    es = "🇪🇸, Español"
-    en = "🇺🇸, English"
-    ar = "🇸🇦, العربية"
-    pt = "🇵🇹, Português"
-    bn = "🇧🇩, বাংলা"
-    id = "🇮🇩, Bahasa Indonesia"
-    ru = "🇷🇺, Русский"
-    ja = "🇯🇵, 日本語"
-    pa = "🇵🇰, ਪੰਜਾਬੀ"
-    de = "🇩🇪, Deutsch"
+    es = "Español"
+    en = "English"
+    ar = "العربية"
+    pt = "Português"
+    bn = "বাংলা"
+    id = "Bahasa Indonesia"
+    ru = "Русский"
+    ja = "日本語"
+    pa = "ਪੰਜਾਬੀ"
+    de = "Deutsch"
 
 
 class LanguageCallback(CallbackData, prefix="language"):

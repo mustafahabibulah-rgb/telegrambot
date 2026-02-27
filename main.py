@@ -11,7 +11,8 @@ from aiogram.types import ChatInviteLink, Contact, FSInputFile, ResultChatMember
 from dotenv import load_dotenv
 import os
 
-from sqlalchemy import select
+from sqlalchemy import join, select
+from sqlalchemy.orm import joinedload
 
 from db import Group, User, async_session_maker, create_or_update, get_or_create, init_models
 from keyboards import LanguageCallback, language_keyboard
@@ -237,7 +238,7 @@ async def handle_language_callback(callback_query: types.CallbackQuery, callback
             )
             return
 
-        group.language_code = callback_data.language
+        group.language = callback_data.language.value
         await session.commit()
 
     text = texts.language_changed.get(callback_query.from_user.language_code, "en")
@@ -257,23 +258,38 @@ async def handle_group_new_message(message: types.Message) -> None:
         return
 
     async with async_session_maker() as session:
-        query = select(Group).filter_by(
+        query = select(Group).options(joinedload(Group.recipient)).filter_by(
             id=message.chat.id
         )
         result = await session.execute(query)
-        group = result.scalars().one_or_none()
+        sender_group = result.scalars().one_or_none()
 
-    if not group:
+    if not sender_group:
         await message.answer(texts.not_authorized_group.get(message.from_user.language_code, "en"))
         raise ValueError(
             f"Group not authorized, "
             f"user link = <a href='tg://user?id={message.from_user.id}'>{message.from_user.full_name}</a>"
         )
 
-    if not group.language_code:
+    if not sender_group.language:
         await message.answer(
             text=texts.choose_language.get(message.from_user.language_code, "en"),
             reply_markup=await language_keyboard(),
+        )
+        return
+
+    async with async_session_maker() as session:
+        query = select(Group).filter_by(
+            sender_id=sender_group.recipient_id, 
+            recipient_id=message.from_user.id,
+        )
+        result = await session.execute(query)
+        recipient_group = result.scalars().one_or_none()
+
+    if not recipient_group.language:
+        text=texts.recipient_not_set_language.get(message.from_user.language_code, "en")
+        await message.answer(
+            text=text.format(user_id=sender_group.recipient.id, full_name=sender_group.recipient.full_name),
         )
         return
 
