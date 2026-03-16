@@ -85,16 +85,16 @@ not_authorized_group = {
 
 
 choose_language = {
-    "es": "Elige el idioma",
-    "en": "Choose the language",
-    "ar": "اختر اللغة",
-    "pt": "Escolha o idioma",
-    "bn": "ভাষা বাছাই করুন",
-    "id": "Pilih bahasa",
-    "ru": "Выберите язык",
-    "ja": "言語を選択してください",
-    "pa": "ਭਾਸ਼ਾ ਚੁਣੋ",
-    "de": "Sprache auswählen",
+    "es": "Elige tu idioma",
+    "en": "Choose your language",
+    "ar": "اختر اللغة الخاصة بك",
+    "pt": "Escolha o idioma de você",
+    "bn": "আপনার ভাষা বাছাই করুন",
+    "id": "Pilih bahasa Anda",
+    "ru": "Выберите свой язык",
+    "ja": "あなたの言語を選択してください",
+    "pa": "ਆਪਣੀ ਭਾਸ਼ਾ ਚੁਣੋ",
+    "de": "Wählen Sie Ihre Sprache",
 }
 
 
