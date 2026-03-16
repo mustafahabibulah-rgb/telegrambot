@@ -55,34 +55,26 @@ async def translate_text(
     recipient_group: Group,
     text: str,
     key: tuple[int, int],
-) -> str:
-    async with _translate_locks_guard:
-        if key not in _translate_locks:
-            _translate_locks[key] = asyncio.Lock()
-        lock = _translate_locks[key]
+) -> None:
+    recipient_language = recipient_group.language
+    instructions = f"Translate the text to {recipient_language} language"
+    response = client.responses.create(
+        model="gpt-5",
+        input=text,
+        instructions=instructions,
+        previous_response_id=sender_group.previous_response_id,
+        store=True,
+    )
 
-    async with lock:
-        assert sender_group.previous_response_id == recipient_group.previous_response_id
-
-        recipient_language = recipient_group.language
-        instructions = f"Translate the text to {recipient_language} language"
-        response = client.responses.create(
-            model="gpt-5",
-            input=text,
-            instructions=instructions,
-            previous_response_id=sender_group.previous_response_id,
-            store=True,
+    async with async_session_maker() as session:
+        query = select(Group).filter(
+            Group.id.in_(key)
         )
-
-        async with async_session_maker() as session:
-            query = select(Group).filter(
-                Group.id.in_(key)
-            )
-            result = await session.execute(query)
-            groups = result.scalars().all()
-            for group in groups:
-                group.previous_response_id = response.id
-            await session.commit()
+        result = await session.execute(query)
+        groups = result.scalars().all()
+        for group in groups:
+            group.previous_response_id = response.id
+        await session.commit()
 
     await bot.send_message(
         chat_id=recipient_group.id, 
@@ -345,16 +337,23 @@ async def handle_group_new_message(message: types.Message) -> None:
 
     key = tuple(sorted([sender_group.id, recipient_group.id]))
 
-    if message.content_type == ContentType.TEXT:
-        await translate_text(sender_group, recipient_group, message.text, key)
+    async with _translate_locks_guard:
+        if key not in _translate_locks:
+            _translate_locks[key] = asyncio.Lock()
+        lock = _translate_locks[key]
 
-    else:
-        await bot.forward_message(
-            chat_id=recipient_group.id,
-            from_chat_id=message.chat.id,
-            message_id=message.message_id,
-        )
-        return
+    async with lock:
+        assert sender_group.previous_response_id == recipient_group.previous_response_id
+
+        if message.content_type == ContentType.TEXT:
+            await translate_text(sender_group, recipient_group, message.text, key)
+
+        else:
+            await bot.forward_message(
+                chat_id=recipient_group.id,
+                from_chat_id=message.chat.id,
+               message_id=message.message_id,
+            )
 
 
 async def main():
