@@ -8,6 +8,9 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import ChatInviteLink, Contact, ContentType, FSInputFile, ResultChatMemberUnion
+import tempfile
+from pathlib import Path
+import subprocess
 
 from dotenv import load_dotenv
 import os
@@ -88,7 +91,43 @@ async def translate_voice(
     voice_file_id: str,
     key: tuple[int, int],
 ) -> None:
-    pass
+    # 1. Download voice file from Telegram to a temp file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        safe_id = voice_file_id.replace("/", "_")
+        input_path = Path(tmpdir) / f"{safe_id}.oga"
+        converted_path = Path(tmpdir) / f"{safe_id}.wav"
+
+        # aiogram v3 provides a unified download method
+        await bot.download(voice_file_id, input_path)
+
+        # 2. Convert .oga (OGG/Opus) to a format supported by OpenAI (e.g. WAV) using ffmpeg
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-y",  # overwrite output file if exists
+                "-i",
+                str(input_path),
+                str(converted_path),
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if result.returncode != 0 or not converted_path.exists():
+            raise RuntimeError("Failed to convert voice message with ffmpeg")
+
+        # 3. Transcribe original voice (now in WAV)
+        with converted_path.open("rb") as f:
+            transcription = client.audio.transcriptions.create(
+                model="gpt-4o-transcribe",
+                file=f,
+            )
+
+        original_text = getattr(transcription, "text", None)
+        if not original_text:
+            raise ValueError("Failed to transcribe voice message")
+
+        # 4. Translate text to recipient language using the same conversation thread
+        await translate_text(sender_group, recipient_group, original_text, key)
 
 
 def notify_on_exception(func):
