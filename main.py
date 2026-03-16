@@ -84,7 +84,10 @@ async def translate_text(
                 group.previous_response_id = response.id
             await session.commit()
 
-        return response.output_text
+    await bot.send_message(
+        chat_id=recipient_group.id, 
+        text=response.output_text,
+    )
 
 
 def notify_on_exception(func):
@@ -340,20 +343,18 @@ async def handle_group_new_message(message: types.Message) -> None:
         )
         return
 
-    if message.content_type not in [ContentType.TEXT, ContentType.VOICE]:
+    key = tuple(sorted([sender_group.id, recipient_group.id]))
+
+    if message.content_type == ContentType.TEXT:
+        await translate_text(sender_group, recipient_group, message.text, key)
+
+    else:
         await bot.forward_message(
             chat_id=recipient_group.id,
             from_chat_id=message.chat.id,
             message_id=message.message_id,
         )
         return
-
-    key = tuple(sorted([sender_group.id, recipient_group.id]))
-    text = await translate_text(sender_group, recipient_group, message.text, key)
-    await bot.send_message(
-        chat_id=recipient_group.id, 
-        text=text,
-    )
 
 
 async def main():
