@@ -1,3 +1,4 @@
+from openai import OpenAI
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ChatMemberStatus
 from aiogram.enums.parse_mode import ParseMode
@@ -6,12 +7,15 @@ from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ChatInviteLink, Contact, FSInputFile, ResultChatMemberUnion
+from aiogram.types import ChatInviteLink, Contact, ContentType, FSInputFile, ResultChatMemberUnion
+import tempfile
+from pathlib import Path
+import subprocess
 
 from dotenv import load_dotenv
 import os
 
-from sqlalchemy import join, select
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from db import Group, User, async_session_maker, create_or_update, get_or_create, init_models
@@ -28,6 +32,12 @@ TOKEN = os.getenv('TOKEN')
 DEV_CHAT_ID = os.getenv('DEV_CHAT_ID')
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Per (sender_group_id, recipient_group_id) lock: 
+# same pair runs one-by-one, different pairs run in parallel.
+_translate_locks: dict[tuple[int, ...], asyncio.Lock] = {}
+_translate_locks_guard = asyncio.Lock()
 
 
 def get_name_from_contact(contact: Contact) -> str | None:
@@ -41,6 +51,83 @@ def get_name_from_contact(contact: Contact) -> str | None:
                 return line[3:].strip()
 
     return None
+
+
+async def translate_text(
+    sender_group: Group,
+    recipient_group: Group,
+    text: str,
+    key: tuple[int, int],
+) -> None:
+    recipient_language = recipient_group.language
+    instructions = f"Translate the text to {recipient_language} language"
+    response = client.responses.create(
+        model="gpt-5",
+        input=text,
+        instructions=instructions,
+        previous_response_id=sender_group.previous_response_id,
+        store=True,
+    )
+
+    async with async_session_maker() as session:
+        query = select(Group).filter(
+            Group.id.in_(key)
+        )
+        result = await session.execute(query)
+        groups = result.scalars().all()
+        for group in groups:
+            group.previous_response_id = response.id
+        await session.commit()
+
+    await bot.send_message(
+        chat_id=recipient_group.id, 
+        text=response.output_text,
+    )
+
+
+async def translate_voice(
+    sender_group: Group,
+    recipient_group: Group,
+    voice_file_id: str,
+    key: tuple[int, int],
+) -> None:
+    # 1. Download voice file from Telegram to a temp file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        safe_id = voice_file_id.replace("/", "_")
+        input_path = Path(tmpdir) / f"{safe_id}.oga"
+        converted_path = Path(tmpdir) / f"{safe_id}.wav"
+
+        # aiogram v3 provides a unified download method
+        await bot.download(voice_file_id, input_path)
+
+        # 2. Convert .oga (OGG/Opus) to a format supported by OpenAI (e.g. WAV) using ffmpeg
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-y",  # overwrite output file if exists
+                "-i",
+                str(input_path),
+                str(converted_path),
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if result.returncode != 0 or not converted_path.exists():
+            raise RuntimeError("Failed to convert voice message with ffmpeg")
+
+        # 3. Transcribe original voice (now in WAV)
+        with converted_path.open("rb") as f:
+            transcription = client.audio.transcriptions.create(
+                model="gpt-4o-transcribe",
+                file=f,
+            )
+
+        original_text = getattr(transcription, "text", None)
+        if not original_text:
+            raise ValueError("Failed to transcribe voice message")
+
+        # 4. Translate text to recipient language using the same conversation thread
+        await translate_text(sender_group, recipient_group, original_text, key)
 
 
 def notify_on_exception(func):
@@ -238,15 +325,18 @@ async def handle_language_callback(callback_query: types.CallbackQuery, callback
             )
             return
 
-        group.language = callback_data.language.value
+        group.language = callback_data.language.name
         await session.commit()
 
     text = texts.language_changed.get(callback_query.from_user.language_code, "en")
+    await bot.delete_message(
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
+    )
+
     await callback_query.answer(
         text=text.format(language=callback_data.language.value),
     )
-
-    await callback_query.message.delete()
 
 
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
@@ -292,6 +382,29 @@ async def handle_group_new_message(message: types.Message) -> None:
             text=text.format(user_id=sender_group.recipient.id, full_name=sender_group.recipient.full_name),
         )
         return
+
+    key = tuple(sorted([sender_group.id, recipient_group.id]))
+
+    async with _translate_locks_guard:
+        if key not in _translate_locks:
+            _translate_locks[key] = asyncio.Lock()
+        lock = _translate_locks[key]
+
+    async with lock:
+        assert sender_group.previous_response_id == recipient_group.previous_response_id
+
+        if message.content_type == ContentType.TEXT:
+            await translate_text(sender_group, recipient_group, message.text, key)
+
+        elif message.content_type == ContentType.VOICE:
+            await translate_voice(sender_group, recipient_group, message.voice.file_id, key)
+
+        else:
+            await bot.forward_message(
+                chat_id=recipient_group.id,
+                from_chat_id=message.chat.id,
+               message_id=message.message_id,
+            )
 
 
 async def main():

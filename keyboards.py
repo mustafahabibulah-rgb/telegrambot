@@ -4,16 +4,16 @@ from enum import Enum
 
 
 class LanguageModelEnum(str, Enum):
-    es = "Español"
-    en = "English"
-    ar = "العربية"
-    pt = "Português"
-    bn = "বাংলা"
-    id = "Bahasa Indonesia"
-    ru = "Русский"
-    ja = "日本語"
-    pa = "ਪੰਜਾਬੀ"
-    de = "Deutsch"
+    spanish = "Español"
+    english = "English"
+    arabic = "العربية"
+    portuguese = "Português"
+    bangla = "বাংলা"
+    indonesian = "Bahasa Indonesia"
+    russian = "Русский"
+    japanese = "日本語"
+    punjabi = "ਪੰਜਾਬੀ"
+    german = "Deutsch"
 
 
 class LanguageCallback(CallbackData, prefix="language"):

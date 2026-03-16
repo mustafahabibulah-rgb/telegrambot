@@ -42,6 +42,7 @@ class Group(Base):
         foreign_keys=[recipient_id],
     )
     language: Mapped[str] = mapped_column(String(length=16), nullable=True)
+    previous_response_id: Mapped[Optional[str]] = mapped_column(String(length=256), nullable=True)
 
 
 async def get_or_create(session: AsyncSession, model: Type[Base], defaults: Optional[dict] = None, **kwargs: Any) -> tuple[Any, bool]:
