@@ -75,8 +75,8 @@ async def translate_text(
         )
 
         async with async_session_maker() as session:
-            query = select(Group).filter_by(
-                id.in_(key)
+            query = select(Group).filter(
+                Group.id.in_(key)
             )
             result = await session.execute(query)
             groups = result.scalars().all()
