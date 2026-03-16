@@ -82,6 +82,15 @@ async def translate_text(
     )
 
 
+async def translate_voice(
+    sender_group: Group,
+    recipient_group: Group,
+    voice_file_id: str,
+    key: tuple[int, int],
+) -> None:
+    pass
+
+
 def notify_on_exception(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
@@ -347,6 +356,9 @@ async def handle_group_new_message(message: types.Message) -> None:
 
         if message.content_type == ContentType.TEXT:
             await translate_text(sender_group, recipient_group, message.text, key)
+
+        elif message.content_type == ContentType.VOICE:
+            await translate_voice(sender_group, recipient_group, message.voice.file_id, key)
 
         else:
             await bot.forward_message(
