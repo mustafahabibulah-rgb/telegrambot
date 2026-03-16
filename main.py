@@ -7,7 +7,7 @@ from aiogram.filters import CommandStart, Command
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ChatInviteLink, Contact, FSInputFile, ResultChatMemberUnion
+from aiogram.types import ChatInviteLink, Contact, ContentType, FSInputFile, ResultChatMemberUnion
 
 from dotenv import load_dotenv
 import os
@@ -337,6 +337,14 @@ async def handle_group_new_message(message: types.Message) -> None:
         text=texts.recipient_not_set_language.get(message.from_user.language_code, "en")
         await message.answer(
             text=text.format(user_id=sender_group.recipient.id, full_name=sender_group.recipient.full_name),
+        )
+        return
+
+    if message.content_type not in [ContentType.TEXT, ContentType.VOICE]:
+        await bot.forward_message(
+            chat_id=recipient_group.id,
+            from_chat_id=message.chat.id,
+            message_id=message.message_id,
         )
         return
 
