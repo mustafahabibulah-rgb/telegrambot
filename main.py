@@ -176,6 +176,7 @@ async def start_command_handler(message: types.Message):
     await message.answer_animation(animation, caption=text)
 
 
+@dp.channel_post(Command("id"))
 @dp.message(Command("id"))
 @notify_on_exception
 async def id_command_handler(message: types.Message):
