@@ -188,7 +188,7 @@ async def id_command_handler(message: types.Message):
     if user_id:
         text += f"👤 Your ID: {user_id}\n"
 
-    if thread_id:
+    if thread_id is not None:
         text += f"🧵 Thread ID: {thread_id}\n"
 
     await message.answer(text)
