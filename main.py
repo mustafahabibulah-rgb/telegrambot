@@ -179,7 +179,19 @@ async def start_command_handler(message: types.Message):
 @dp.message(Command("id"))
 @notify_on_exception
 async def id_command_handler(message: types.Message):
-    await message.answer(f"Ваш ID: {message.chat.id}")
+    chat_id = message.chat.id
+    user_id = message.from_user.id if message.from_user else None
+    thread_id = message.message_thread_id
+
+    text = f"📌 Chat ID: {chat_id}\n"
+
+    if user_id:
+        text += f"👤 Your ID: {user_id}\n"
+
+    if thread_id:
+        text += f"🧵 Thread ID: {thread_id}\n"
+
+    await message.answer(text)
 
 
 @dp.message(Command("empty"))
