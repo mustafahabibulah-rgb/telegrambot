@@ -1,9 +1,15 @@
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, types
+import os
 
 from dotenv import load_dotenv
-import os
+
+from aiogram import Bot, Dispatcher, types
+from aiogram.enums import ChatType
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +42,36 @@ async def hello(message: types.Message):
 
 @dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
 async def menu_handler(message: types.Message):
+    if message.chat.type == "private":
+        await message.answer()
+        '''создай группу
+добавь бота  в группу
+сделай бота админом
+отправь контакт собеседника'''
+    else:
+        await message.answer(
+            'бот переводчик'
+        )
+
+        await message.answer(
+            'бот переводчик'
+        )
+
+
+@dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
+async def menu_handler(message: types.Message):
+    if message.chat.type == "private":
+     await message.answer(
+        "📋 выберите язык"
+    )
+
+
+
+
+
+
+@dp.message(lambda m: "start" in m.text.lower() or "/start" in m.text.lower())
+async def menu_handler(message: types.Message):
     kb = [
         [types.KeyboardButton(text="руски"), types.KeyboardButton(text="арабски")],
     ]
@@ -63,3 +99,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+
