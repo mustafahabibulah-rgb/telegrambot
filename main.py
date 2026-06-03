@@ -4,6 +4,7 @@ import os
 
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
+from aiogram import F
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,23 +19,23 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-@dp.message(lambda m: m.text and "/start" in m.text.lower())
-async def menu_handler(message: types.Message):
+@dp.message(F.text == "/start")
+async def start_handler(message: types.Message):
 
     if message.chat.type == "private":
 
-        kb = [
-            [types.KeyboardButton(text="руски"),
-             types.KeyboardButton(text="арабски")]
-        ]
-
         keyboard = types.ReplyKeyboardMarkup(
-            keyboard=kb,
+            keyboard=[
+                [
+                    types.KeyboardButton(text="руски"),
+                    types.KeyboardButton(text="арабски")
+                ]
+            ],
             resize_keyboard=True
         )
 
         await message.answer(
-            "📋 выберите язык",
+            "📋 Выберите язык",
             reply_markup=keyboard
         )
 
@@ -42,7 +43,44 @@ async def menu_handler(message: types.Message):
         await message.answer("бот переводчик")
 
 
-@dp.message(lambda m: m.text and "/id" in m.text.lower())
+@dp.message(F.text.in_(["руски", "арабски"]))
+async def language_handler(message: types.Message):
+
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                types.KeyboardButton(
+                    text="📱 Отправить контакт"
+                )
+            ]
+        ],
+        resize_keyboard=True
+    )
+
+    await message.answer(
+        "Отправь контакт собеседника через меню Telegram:\n"
+        "📎 → Контакт",
+        reply_markup=keyboard
+    )
+
+
+@dp.message(F.contact)
+async def contact_handler(message: types.Message):
+
+    contact = message.contact
+
+    text = (
+        "✅ Контакт получен\n\n"
+        f"Имя: {contact.first_name}\n"
+        f"Фамилия: {contact.last_name or '-'}\n"
+        f"Телефон: {contact.phone_number}\n"
+        f"User ID: {contact.user_id or '-'}"
+    )
+
+    await message.answer(text)
+
+
+@dp.message(F.text == "/id")
 async def get_chat_id(message: types.Message):
     await message.answer(f"Ваш ID: {message.chat.id}")
 
@@ -63,4 +101,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
