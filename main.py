@@ -11,6 +11,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, ForeignKey
 from typing import Optional
 
+from db import save_user_to_db, UserBase, Session, save_contact_to_db, get_all_users
+
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()

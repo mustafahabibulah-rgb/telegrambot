@@ -1,5 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer
-from sqlalchemy.orm import declarative_base, sessionmaker
+from typing import Optional
+
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base, sessionmaker, Mapped, DeclarativeBase, mapped_column
 
 engine = create_engine("sqlite:///translator.sqlite")
 
