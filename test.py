@@ -1,8 +1,15 @@
-number = int(input("Введите число: "))
+from turtle import *
 
-if number % 2 == 0:
-    print("Число чётное")
-else:
-    print("Число нечётное")
+speed(20)
+color('cyan')
+bgcolor('black')
+b = 200
+
+
+while b > 0:
+    left(b)
+    forward(b * 3)
+    b = b - 1
+
 
 
