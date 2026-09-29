@@ -5,13 +5,12 @@ import os
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram import F
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, ForeignKey
-from typing import Optional
+# Импортируем только то, что нужно для работы с БД и сервисами
+from database.connection import init_database, Session
+from database.models import UserBase  # Теперь импортируем из нашей новой папки database.models, а не из db!
+from services.user_service import save_user_to_db, save_contact_to_db, get_all_users
 
-from db import save_user_to_db, UserBase, Session, save_contact_to_db, get_all_users
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -70,28 +69,22 @@ async def language_handler(message: types.Message):
 
 @dp.message(F.contact)
 async def contact_handler(message: types.Message):
-    # Получаем данные контакта
     contact = message.contact
 
-    # Информация о том, кто отправил контакт
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name or message.from_user.username or "Unknown"
 
-    # Информация о контакте
     contact_id = contact.user_id
     contact_phone = contact.phone_number
     contact_first_name = contact.first_name
     contact_last_name = contact.last_name or ""
     contact_full_name = f"{contact_first_name} {contact_last_name}".strip()
 
-    # Сохраняем отправителя в БД (если его нет)
     save_user_to_db(sender_id, sender_name)
 
-    # Сохраняем контакт в БД (если есть ID и его нет в БД)
     if contact_id:
         save_contact_to_db(sender_id, contact_id, contact_full_name, contact_phone)
 
-    # Текст для ответа
     text = (
         "✅ Контакт получен и сохранён в базу данных!\n\n"
         f"👤 Отправитель: {sender_name}\n"
@@ -100,13 +93,22 @@ async def contact_handler(message: types.Message):
         f"🆔 ID контакта: {contact_id or 'Не указан'}"
     )
 
-    # Отвечаем на сообщение с контактом (reply)
     await message.reply(text)
 
 
 @dp.message(F.text == "/id")
 async def get_chat_id(message: types.Message):
     await message.answer(f"Ваш ID: {message.chat.id}")
+
+
+
+async def main():
+    init_database()  # Создаёт таблицы при запуске бота
+    await bot.delete_webhook(drop_pending_updates=True)  # сброс вебхука
+    await dp.start_polling(bot)
+
+
+
 
 
 @dp.message(F.text == "/db")
