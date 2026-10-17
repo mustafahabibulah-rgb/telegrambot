@@ -3,7 +3,6 @@ from database.connection import Session
 from database.models import UserBase
 
 def save_user_to_db(telegram_id: int, name: str):
-    """Сохраняет пользователя в базу данных"""
     with Session() as session:
         existing_user = session.query(UserBase).filter_by(id=telegram_id).first()
 
@@ -18,7 +17,6 @@ def save_user_to_db(telegram_id: int, name: str):
             return existing_user
 
 def save_contact_to_db(sender_id: int, contact_id: int, contact_name: str, contact_phone: str):
-    """Сохраняет контакт в базу данных"""
     with Session() as session:
         existing_contact = session.query(UserBase).filter_by(id=contact_id).first()
 
@@ -33,6 +31,5 @@ def save_contact_to_db(sender_id: int, contact_id: int, contact_name: str, conta
             return existing_contact
 
 def get_all_users():
-    """Получает всех пользователей из базы"""
     with Session() as session:
         return session.query(UserBase).all()
