@@ -5,9 +5,10 @@ import os
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram import F
-# Импортируем только то, что нужно для работы с БД и сервисами
+from virtualenv.seed.wheels.periodic_update import do_update
+
 from database.connection import init_database, Session
-from database.models import UserBase  # Теперь импортируем из нашей новой папки database.models, а не из db!
+from database.models import UserBase
 from services.user_service import save_user_to_db, save_contact_to_db, get_all_users
 
 
@@ -28,7 +29,6 @@ dp = Dispatcher()
 
 @dp.message(F.text == "/start")
 async def start_handler(message: types.Message):
-    # Сохраняем пользователя в БД
     user_name = message.from_user.first_name or message.from_user.username or "Unknown"
     save_user_to_db(message.from_user.id, user_name)
 
@@ -53,7 +53,6 @@ async def start_handler(message: types.Message):
 
 @dp.message(F.text.in_(["руски", "арабски"]))
 async def language_handler(message: types.Message):
-    # Сохраняем язык в БД
     with Session() as session:
         user = session.query(UserBase).filter_by(id=message.from_user.id).first()
         if user:
@@ -65,7 +64,6 @@ async def language_handler(message: types.Message):
         "Отправь контакт собеседника через меню Telegram:\n"
         "📎 → Контакт"
     )
-
 
 @dp.message(F.contact)
 async def contact_handler(message: types.Message):
@@ -103,8 +101,8 @@ async def get_chat_id(message: types.Message):
 
 
 async def main():
-    init_database()  # Создаёт таблицы при запуске бота
-    await bot.delete_webhook(drop_pending_updates=True)  # сброс вебхука
+    init_database()
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 
@@ -138,8 +136,6 @@ async def forward_messages(message: types.Message):
         await message.copy_to(GROUP_1_ID)
 
 
-# ============ ЗАПУСК ============
-
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)  # сброс вебхука
     await dp.start_polling(bot)
@@ -147,3 +143,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
